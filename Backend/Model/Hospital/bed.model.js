@@ -1,7 +1,7 @@
 import { Schema,model } from "mongoose";
 
 const bedSchema = new Schema({
-    bedid:{type:String},
+    id:{type:String},
     type:{type:String},
     ward:{type:String},
     isOccupied:{type:Boolean, default:false}

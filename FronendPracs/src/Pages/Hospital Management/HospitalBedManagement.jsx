@@ -1,28 +1,37 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { createbed, deletebed, getallbeds, updatebed } from '../../Redux/Slices/HospitalSlice';
 
 export default function HospitalBedManagement() {
   // State to store list of beds
   const [beds, setBeds] = useState([]);
   
-  // State for new bed form
+  const dispatch = useDispatch()
   const [newBedId, setNewBedId] = useState('');
   const [newBedType, setNewBedType] = useState('Regular');
   const [newBedWard, setNewBedWard] = useState('General');
-  
-  // Load sample data on first render
+  const {bedss,patients,loading,error} = useSelector((state)=>state.hospital)
+  const [localBeds, setLocalBeds] = useState([]);
+  console.log('this is beds',bedss)
+  useEffect(()=>{
+    dispatch(getallbeds())
+    
+  },[dispatch])
   useEffect(() => {
-    // Sample data
-    const sampleBeds = [
-      { id: 'B101', type: 'Regular', ward: 'General', isOccupied: false },
-      { id: 'B102', type: 'Regular', ward: 'General', isOccupied: true },
-      { id: 'B103', type: 'ICU', ward: 'Critical Care', isOccupied: true },
-      { id: 'B104', type: 'Pediatric', ward: 'Children', isOccupied: false },
-    ];
-    setBeds(sampleBeds);
-  }, []);
+    if (bedss && Array.isArray(bedss)) {
+      setLocalBeds(bedss);
+    }
+  }, [bedss]);
+  
+
+  useEffect(() => {
+    if (bedss && Array.isArray(bedss)) {
+      setBeds(bedss);
+    }
+  }, [bedss]);
 
   // Function to add a new bed
-  const handleAddBed = () => {
+  const handleAddBed = async() => {
     // Validate inputs
     if (!newBedId.trim()) {
       alert('Please enter a bed ID');
@@ -30,7 +39,7 @@ export default function HospitalBedManagement() {
     }
     
     // Check if bed ID already exists
-    if (beds.some(bed => bed.id === newBedId)) {
+    if (localBeds.some(bed => bed.id === newBedId)) {
       alert('A bed with this ID already exists');
       return;
     }
@@ -43,10 +52,10 @@ export default function HospitalBedManagement() {
       isOccupied: false
     };
     
-    // Add new bed to the list
-    setBeds([...beds, newBed]);
+    // setBeds([...beds, newBed]);
+
+    const response = await dispatch(createbed(newBed))
     
-    // Clear the form
     setNewBedId('');
     setNewBedType('Regular');
     setNewBedWard('General');
@@ -54,17 +63,24 @@ export default function HospitalBedManagement() {
 
   // Function to toggle bed occupancy
   const toggleOccupancy = (bedId) => {
-    setBeds(beds.map(bed => {
-      if (bed.id === bedId) {
-        return { ...bed, isOccupied: !bed.isOccupied };
-      }
-      return bed;
-    }));
+    // const targetBed = bedss.find((bed) => bed._id === bedId);
+    // if (targetBed) {
+        // const updatedData = { isOccupied: !targetBed.isOccupied };
+        dispatch(updatebed(bedId));
+
+        setLocalBeds(prevBeds =>
+            prevBeds.map(bed =>
+              bed._id === bedId ? { ...bed, isOccupied: !bed.isOccupied } : bed
+            )
+        );
+    // }
+
   };
 
   // Function to delete a bed
   const deleteBed = (bedId) => {
-    setBeds(beds.filter(bed => bed.id !== bedId));
+    // setBeds(beds.filter(bed => bed.id !== bedId));
+    dispatch(deletebed(bedId))
   };
 
   return (
@@ -145,7 +161,7 @@ export default function HospitalBedManagement() {
               </tr>
             </thead>
             <tbody>
-              {beds.length > 0 ? (
+              {localBeds.length > 0 ? (
                 beds.map((bed) => (
                   <tr key={bed.id} className="border-b">
                     <td className="py-3 px-4">{bed.id}</td>
@@ -187,23 +203,23 @@ export default function HospitalBedManagement() {
         <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-blue-50 p-4 rounded-lg">
             <div className="text-sm text-blue-800">Total Beds</div>
-            <div className="text-2xl font-bold">{beds.length}</div>
+            <div className="text-2xl font-bold">{localBeds.length}</div>
           </div>
           
           <div className="bg-green-50 p-4 rounded-lg">
             <div className="text-sm text-green-800">Available</div>
-            <div className="text-2xl font-bold">{beds.filter(bed => !bed.isOccupied).length}</div>
+            <div className="text-2xl font-bold">{localBeds.filter(bed => !bed.isOccupied).length}</div>
           </div>
           
           <div className="bg-red-50 p-4 rounded-lg">
             <div className="text-sm text-red-800">Occupied</div>
-            <div className="text-2xl font-bold">{beds.filter(bed => bed.isOccupied).length}</div>
+            <div className="text-2xl font-bold">{localBeds.filter(bed => bed.isOccupied).length}</div>
           </div>
           
           <div className="bg-purple-50 p-4 rounded-lg">
             <div className="text-sm text-purple-800">Occupancy Rate</div>
             <div className="text-2xl font-bold">
-              {beds.length ? Math.round((beds.filter(bed => bed.isOccupied).length / beds.length) * 100) : 0}%
+              {localBeds.length ? Math.round((localBeds.filter(bed => bed.isOccupied).length / localBeds.length) * 100) : 0}%
             </div>
           </div>
         </div>
